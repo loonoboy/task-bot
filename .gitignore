@@ -1,0 +1,17 @@
+# Go binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Dependency directories
+/vendor/
+
+# IDE or editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+.env
