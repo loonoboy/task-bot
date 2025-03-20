@@ -2,7 +2,8 @@ package bot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"log"
+	"go.uber.org/zap"
+	"task-bot/pkg/logger"
 )
 
 // Bot структура для хранения объекта бота
@@ -12,6 +13,7 @@ type Bot struct {
 
 // NewBot создаёт и настраивает нового Telegram-бота
 func NewBot(BotToken, webhookURL string) (*Bot, error) {
+	log := logger.GetLogger()
 	botAPI, err := tgbotapi.NewBotAPI(BotToken)
 	if err != nil {
 		return nil, err
@@ -19,16 +21,16 @@ func NewBot(BotToken, webhookURL string) (*Bot, error) {
 
 	webhookConfig, err := tgbotapi.NewWebhook(webhookURL)
 	if err != nil {
-		log.Fatalf("Ошибка создания Webhook: %v", err)
+		log.Info("Ошибка создания Webhook", zap.Error(err))
 	}
 
 	_, err = botAPI.Request(webhookConfig)
 	if err != nil {
-		log.Fatalf("Ошибка установки Webhook: %v", err)
+		log.Fatal("Ошибка установки Webhook", zap.Error(err))
 	}
 
-	log.Println("Webhook установлен:", webhookURL)
-	log.Printf("Авторизован как %s", botAPI.Self.UserName)
+	log.Info("Webhook установлен:", zap.String("webhook_url", webhookURL))
+	log.Info("Авторизован", zap.String("user_name", botAPI.Self.UserName))
 
 	return &Bot{API: botAPI}, nil
 }
