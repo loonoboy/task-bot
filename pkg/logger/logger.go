@@ -9,7 +9,7 @@ var log *zap.Logger
 // InitLogger инициализирует глобальный логгер
 func InitLogger() {
 	var err error
-	log, err = zap.NewProduction()
+	log, err = zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}

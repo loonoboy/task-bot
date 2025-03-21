@@ -13,13 +13,17 @@ func main() {
 	cfg := config.LoadConfig()
 	logger.InitLogger()
 	log := logger.GetLogger()
-	defer log.Sync()
-	// Создаёмs и запускаем бота
+	defer func() {
+		if err := log.Sync(); err != nil {
+			log.Error("Ошибка при сбросе логов", zap.Error(err))
+		}
+	}()
 	tgBot, err := bot.NewBot(cfg.BotToken, cfg.WebhookURL)
 	if err != nil {
 		log.Error("Ошибка при запуске бота:", zap.Error(err))
 	}
 	tgBot.API.Debug = cfg.Debug
+	bot.SetBotMenu(tgBot.API)
 
 	r := router.SetupRouter(tgBot.API)
 

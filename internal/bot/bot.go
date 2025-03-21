@@ -34,3 +34,17 @@ func NewBot(BotToken, webhookURL string) (*Bot, error) {
 
 	return &Bot{API: botAPI}, nil
 }
+
+func SetBotMenu(bot *tgbotapi.BotAPI) {
+	log := logger.GetLogger()
+	commands := []tgbotapi.BotCommand{
+		{Command: "start", Description: "Запустить бота"},
+		{Command: "help", Description: "Справка"},
+	}
+
+	cfg := tgbotapi.NewSetMyCommands(commands...)
+	_, err := bot.Request(cfg)
+	if err != nil {
+		log.Error("Ошибка установки меню", zap.Error(err))
+	}
+}

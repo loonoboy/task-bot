@@ -1,11 +1,11 @@
 package config
 
 import (
-	"log"
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
+	"task-bot/pkg/logger"
 )
 
 // Config — структура для хранения конфигурации
@@ -17,9 +17,10 @@ type Config struct {
 
 // LoadConfig загружает конфигурацию из .env
 func LoadConfig() *Config {
+	log := logger.GetLogger()
 	// Загружаем переменные из .env
 	if err := godotenv.Load(); err != nil {
-		log.Println("Предупреждение: файл .env не найден, загружаем переменные из окружения")
+		log.Info("Предупреждение: файл .env не найден, загружаем переменные из окружения")
 	}
 
 	// Читаем переменные
@@ -30,7 +31,7 @@ func LoadConfig() *Config {
 	// Преобразуем DEBUG в bool
 	debug, err := strconv.ParseBool(debugStr)
 	if err != nil {
-		log.Println("Ошибка при разборе DEBUG, установлено значение false")
+		log.Error("Ошибка при разборе DEBUG, установлено значение false", zap.Error(err))
 		debug = false
 	}
 
