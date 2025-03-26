@@ -4,6 +4,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"task-bot/internal/bot"
+	"task-bot/internal/db"
 	"task-bot/internal/router"
 	"task-bot/pkg/config"
 	"task-bot/pkg/logger"
@@ -11,6 +12,8 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
+	db.ConnectDB()
+	defer db.CloseDB()
 	logger.InitLogger()
 	log := logger.GetLogger()
 	defer func() {

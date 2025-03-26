@@ -38,7 +38,8 @@ func NewBot(BotToken, webhookURL string) (*Bot, error) {
 func SetBotMenu(bot *tgbotapi.BotAPI) {
 	log := logger.GetLogger()
 	commands := []tgbotapi.BotCommand{
-		{Command: "start", Description: "Запустить бота"},
+		{Command: "create", Description: "Создать задачу"},
+		{Command: "list", Description: "Список задач"},
 		{Command: "help", Description: "Справка"},
 	}
 
