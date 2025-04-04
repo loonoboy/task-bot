@@ -20,6 +20,12 @@ type User struct {
 	UpdatedAt  time.Time
 }
 
+type Task struct {
+	ID          int64
+	Title       string
+	Description string
+}
+
 var DB *pgxpool.Pool
 
 func ConnectDB() {
@@ -76,4 +82,27 @@ func CreateTask(userID int64, title, description string) error {
 
 	fmt.Println("Task created successfully")
 	return nil
+}
+
+func GetUserTasks(userID int64) ([]Task, error) {
+	ctx := context.Background()
+	rows, err := DB.Query(ctx, `
+        SELECT id, title, description
+        FROM tasks 
+        WHERE user_id = $1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []Task
+	for rows.Next() {
+		var t Task
+		if err := rows.Scan(&t.ID, &t.Title, &t.Description); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, t)
+	}
+
+	return tasks, nil
 }

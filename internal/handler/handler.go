@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"net/http"
@@ -107,6 +108,27 @@ func ProcessCommand(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Messag
 			userStates[user.ID] = &UserState{Step: "waiting_for_title"}
 		}
 		ProcessCreate(userStates[user.ID], bot, msg)
+	case cmd == "/list":
+		tasks, err := db.GetUserTasks(user.ID)
+		if err != nil {
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ошибка получения списка задач. Попробуйте позже."))
+			return
+		}
+
+		if len(tasks) == 0 {
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "📭 У вас пока нет задач."))
+			return
+		}
+
+		var responseText string
+		for _, task := range tasks {
+			responseText += fmt.Sprintf("📌 *%s*\n%s\n\n", task.Title, task.Description)
+		}
+
+		msg := tgbotapi.NewMessage(msg.Chat.ID, responseText)
+		msg.ParseMode = "Markdown"
+		bot.Send(msg)
+
 	default:
 		response := tgbotapi.NewMessage(msg.Chat.ID,
 			"⛔ Неизвестная команда\n\nВоспользуйся командой /help, чтобы узнать какие команды я могу выполнять")
