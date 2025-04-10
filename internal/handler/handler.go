@@ -21,6 +21,7 @@ type UserState struct {
 type Task struct {
 	Title       string
 	Description string
+	DueDate     time.Time
 }
 
 var userStates = make(map[int64]*UserState)
@@ -162,13 +163,25 @@ func ProcessCreate(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Message
 		}
 	case "waiting_for_description":
 		state.TempTask.Title = msg.Text
-		state.Step = "waiting_for_setup"
+		state.Step = "waiting_for_date"
 		response := tgbotapi.NewMessage(msg.Chat.ID, "📌 Теперь введите описание задачи:")
 		bot.Send(response)
 
-	case "waiting_for_setup":
+	case "waiting_for_date":
 		state.TempTask.Description = msg.Text
-		err := db.CreateTask(msg.From.ID, state.TempTask.Title, state.TempTask.Description)
+		state.Step = "waiting_for_setup"
+		response := tgbotapi.NewMessage(msg.Chat.ID, "📥 Пожалуйста, введите дату и время в формате:\n"+
+			"ДД.ММ.ГГГГ ЧЧ:ММ\n"+
+			"Например: 10.04.2025 14:30")
+		bot.Send(response)
+	case "waiting_for_setup":
+		layout := "02.01.2006 15:04"
+		parsedTime, err := time.Parse(layout, msg.Text)
+		if err != nil {
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Неправильый формат, введите еще раз"))
+			return
+		}
+		err = db.CreateTask(msg.From.ID, state.TempTask.Title, state.TempTask.Description, parsedTime)
 		if err != nil {
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ошибка сохранения задачи. Попробуйте позже."))
 			return

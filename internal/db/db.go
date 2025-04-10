@@ -72,10 +72,10 @@ func CheckUserExistence(userID int64) (bool, error) {
 	return exists, nil
 }
 
-func CreateTask(userID int64, title, description string) error {
+func CreateTask(userID int64, title, description string, duedate time.Time) error {
 	log := logger.GetLogger()
-	query := `INSERT INTO tasks (user_id, title, description) VALUES ($1, $2, $3)`
-	_, err := DB.Exec(context.Background(), query, userID, title, description)
+	query := `INSERT INTO tasks (user_id, title, description, due_date) VALUES ($1, $2, $3, $4)`
+	_, err := DB.Exec(context.Background(), query, userID, title, description, duedate)
 	if err != nil {
 		log.Error("failed to insert task", zap.Error(err))
 	}

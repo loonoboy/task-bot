@@ -12,8 +12,13 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
+
 	db.ConnectDB()
 	defer db.CloseDB()
+
+	db.ConnectRedis()
+	defer db.CloseRedis()
+
 	logger.InitLogger()
 	log := logger.GetLogger()
 	defer func() {
