@@ -56,7 +56,7 @@ func WurmUpRedis() {
 	log := logger.GetLogger()
 	reminders, err := GetAllRemindersForRedis()
 	if err != nil {
-		log.Fatal("Ошибка при получении напоминаний из базы", zap.Error(err))
+		log.Error("Ошибка при получении напоминаний из базы", zap.Error(err))
 	}
 	for _, reminder := range reminders {
 		CreateRedisRecord(reminder.DueDate, reminder.ID)
