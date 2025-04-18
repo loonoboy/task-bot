@@ -13,6 +13,8 @@ type Config struct {
 	BotToken   string
 	Debug      bool
 	WebhookURL string
+	DSN        string
+	RedisAddr  string
 }
 
 // LoadConfig загружает конфигурацию из .env
@@ -27,6 +29,8 @@ func LoadConfig() *Config {
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	debugStr := os.Getenv("DEBUG")
 	webhookURL := os.Getenv("WEBHOOK")
+	dsn := os.Getenv("DSN")
+	redisAddr := os.Getenv("REDIS_ADDR")
 
 	// Преобразуем DEBUG в bool
 	debug, err := strconv.ParseBool(debugStr)
@@ -39,5 +43,7 @@ func LoadConfig() *Config {
 		BotToken:   botToken,
 		Debug:      debug,
 		WebhookURL: webhookURL,
+		DSN:        dsn,
+		RedisAddr:  redisAddr,
 	}
 }

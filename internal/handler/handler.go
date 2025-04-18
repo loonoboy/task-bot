@@ -68,7 +68,7 @@ func WebHookHandler(bot *tgbotapi.BotAPI) http.HandlerFunc {
 		if update.Message != nil {
 			ProcessCommand(state, bot, update.Message)
 		} else if update.CallbackQuery != nil {
-			ProcessCallbackQuery(state, bot, update.CallbackQuery)
+			ProcessCallbackQuery(bot, update.CallbackQuery)
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -80,6 +80,7 @@ func ProcessCommand(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Messag
 	user := msg.From
 	switch {
 	case cmd == "/start":
+		CheckUser(user)
 		response := tgbotapi.NewMessage(msg.Chat.ID,
 			"Привет! 👋\n\nЯ - твой личный менеджер задач🤖\n\n"+
 				"Ты можешь воспользоваться командой /help, чтобы узнать, что я умею\n\n"+
@@ -104,7 +105,7 @@ func ProcessCommand(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Messag
 			log.Error("Ошибка отправки сообщения", zap.Error(err))
 		}
 	case cmd == "/create" || state.Step != "":
-		CheckUser(user)
+
 		if userStates[user.ID].Step == "" {
 			userStates[user.ID] = &UserState{Step: "waiting_for_title"}
 		}
@@ -140,7 +141,7 @@ func ProcessCommand(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Messag
 	}
 }
 
-func ProcessCallbackQuery(state *UserState, bot *tgbotapi.BotAPI, callback *tgbotapi.CallbackQuery) {
+func ProcessCallbackQuery(bot *tgbotapi.BotAPI, callback *tgbotapi.CallbackQuery) {
 	switch callback.Data {
 	case "/create":
 		CheckUser(callback.From)
@@ -149,6 +150,29 @@ func ProcessCallbackQuery(state *UserState, bot *tgbotapi.BotAPI, callback *tgbo
 		}
 		ProcessCreate(userStates[callback.From.ID], bot, callback.Message)
 	case "/list":
+		tasks, err := db.GetUserTasks(callback.From.ID)
+		if err != nil {
+			bot.Send(tgbotapi.NewMessage(callback.Message.Chat.ID, "❌ Ошибка получения списка задач. Попробуйте позже."))
+			return
+		}
+
+		if len(tasks) == 0 {
+			bot.Send(tgbotapi.NewMessage(callback.Message.Chat.ID, "📭 У вас пока нет задач."))
+			return
+		}
+
+		var responseText string
+		for _, task := range tasks {
+			responseText += fmt.Sprintf(
+				"📌 Название: %s \nОписание: %s\n🕒 Время: %s\n",
+				task.Title,
+				task.Description,
+				task.DueDate.Format("02.01.2006 15:04"),
+			)
+		}
+
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, responseText)
+		bot.Send(msg)
 	}
 }
 
@@ -176,12 +200,17 @@ func ProcessCreate(state *UserState, bot *tgbotapi.BotAPI, msg *tgbotapi.Message
 		bot.Send(response)
 	case "waiting_for_setup":
 		layout := "02.01.2006 15:04"
-		parsedTime, err := time.Parse(layout, msg.Text)
+		loc, _ := time.LoadLocation("Europe/Moscow")
+		parsedTime, err := time.ParseInLocation(layout, msg.Text, loc)
 		if err != nil {
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Неправильый формат, введите еще раз"))
 			return
+		} else if parsedTime.Before(time.Now()) {
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Напоминание должно быть на будущее"))
+			return
 		}
-		err = db.CreateTask(msg.From.ID, state.TempTask.Title, state.TempTask.Description, parsedTime)
+		reminderID, err := db.CreateTask(msg.From.ID, state.TempTask.Title, state.TempTask.Description, parsedTime)
+		db.CreateRedisRecord(parsedTime, reminderID)
 		if err != nil {
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ошибка сохранения задачи. Попробуйте позже."))
 			return
